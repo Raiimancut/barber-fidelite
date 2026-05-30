@@ -26,6 +26,28 @@
   * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
   html, body { background: var(--black); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; overscroll-behavior: none; }
 
+  /* PIN SCREEN */
+  .pin-screen { position: fixed; inset: 0; background: var(--black); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 999; padding: 30px 20px; }
+  .pin-logo { font-family: 'Bebas Neue', sans-serif; font-size: 36px; letter-spacing: 4px; color: var(--red); margin-bottom: 6px; }
+  .pin-sub { font-size: 13px; color: var(--muted); margin-bottom: 40px; letter-spacing: 1px; }
+  .pin-dots { display: flex; gap: 16px; margin-bottom: 36px; }
+  .pin-dot { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--border); background: transparent; transition: all 0.15s; }
+  .pin-dot.filled { background: var(--red); border-color: var(--red); }
+  .pin-dot.error { background: #dc2626; border-color: #dc2626; animation: shake 0.4s ease; }
+  .pin-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; max-width: 280px; }
+  .pin-btn { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; font-family: 'Bebas Neue', sans-serif; font-size: 28px; color: var(--text); cursor: pointer; text-align: center; transition: background 0.1s; user-select: none; }
+  .pin-btn:active { background: var(--border); }
+  .pin-btn.del { font-size: 20px; color: var(--muted); }
+  .pin-btn.empty { background: transparent; border-color: transparent; pointer-events: none; }
+  .pin-error-msg { font-size: 13px; color: #dc2626; margin-top: 16px; min-height: 20px; font-weight: 600; }
+  .pin-change-link { font-size: 12px; color: var(--muted); margin-top: 24px; cursor: pointer; text-decoration: underline; }
+
+  /* CHANGE PIN MODAL */
+  .change-pin-modal { background: var(--card); border: 1px solid var(--border); border-radius: 20px; padding: 24px; width: 100%; max-width: 340px; }
+  .change-pin-title { font-family: 'Bebas Neue', sans-serif; font-size: 22px; letter-spacing: 2px; margin-bottom: 16px; }
+
+  @keyframes shake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-8px); } 40% { transform: translateX(8px); } 60% { transform: translateX(-5px); } 80% { transform: translateX(5px); } }
+
   /* HEADER */
   .header { background: var(--dark); border-bottom: 1px solid var(--border); padding: 14px 16px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; }
   .header-logo { font-family: 'Bebas Neue', sans-serif; font-size: 26px; letter-spacing: 3px; color: var(--red); line-height: 1; }
@@ -127,6 +149,51 @@
 </style>
 </head>
 <body>
+
+<!-- PIN SCREEN -->
+<div id="pin-screen" class="pin-screen">
+  <div class="pin-logo">✂ BARBER PRO</div>
+  <div class="pin-sub">ESPACE COIFFEUR</div>
+  <div class="pin-dots">
+    <div class="pin-dot" id="pd0"></div>
+    <div class="pin-dot" id="pd1"></div>
+    <div class="pin-dot" id="pd2"></div>
+    <div class="pin-dot" id="pd3"></div>
+  </div>
+  <div class="pin-grid">
+    <button class="pin-btn" onclick="pinPress('1')">1</button>
+    <button class="pin-btn" onclick="pinPress('2')">2</button>
+    <button class="pin-btn" onclick="pinPress('3')">3</button>
+    <button class="pin-btn" onclick="pinPress('4')">4</button>
+    <button class="pin-btn" onclick="pinPress('5')">5</button>
+    <button class="pin-btn" onclick="pinPress('6')">6</button>
+    <button class="pin-btn" onclick="pinPress('7')">7</button>
+    <button class="pin-btn" onclick="pinPress('8')">8</button>
+    <button class="pin-btn" onclick="pinPress('9')">9</button>
+    <button class="pin-btn empty"></button>
+    <button class="pin-btn" onclick="pinPress('0')">0</button>
+    <button class="pin-btn del" onclick="pinDel()">⌫</button>
+  </div>
+  <div class="pin-error-msg" id="pin-error"></div>
+  <div class="pin-change-link" onclick="showChangePinModal()">Changer le code PIN</div>
+</div>
+
+<!-- CHANGE PIN MODAL -->
+<div class="overlay center" id="change-pin-modal" style="display:none">
+  <div class="change-pin-modal">
+    <div class="change-pin-title">CHANGER LE CODE PIN</div>
+    <label class="input-label">Ancien code</label>
+    <input class="input" id="old-pin" type="password" inputmode="numeric" maxlength="4" placeholder="••••">
+    <label class="input-label">Nouveau code (4 chiffres)</label>
+    <input class="input" id="new-pin" type="password" inputmode="numeric" maxlength="4" placeholder="••••">
+    <label class="input-label">Confirmer le nouveau code</label>
+    <input class="input" id="confirm-pin" type="password" inputmode="numeric" maxlength="4" placeholder="••••">
+    <div class="modal-btns">
+      <button class="cancel-btn" onclick="document.getElementById('change-pin-modal').style.display='none'">Annuler</button>
+      <button class="confirm-btn" onclick="doChangePin()">Confirmer</button>
+    </div>
+  </div>
+</div>
 
 <div class="header">
   <div>
@@ -452,8 +519,73 @@ function showToast(msg, type = 'success') {
   window._toastTimer = setTimeout(() => t.style.display = 'none', 3000);
 }
 
+// ── PIN ───────────────────────────────────────────────────────────
+const DEFAULT_PIN = '1234';
+function getPin() { return localStorage.getItem('barber_pin') || DEFAULT_PIN; }
+function savePin(p) { localStorage.setItem('barber_pin', p); }
+
+let pinEntry = '';
+let pinLocked = true;
+
+// Auto-unlock if already unlocked this session
+if (sessionStorage.getItem('barber_unlocked') === '1') {
+  pinLocked = false;
+  document.getElementById('pin-screen').style.display = 'none';
+}
+
+function pinPress(digit) {
+  if (pinEntry.length >= 4) return;
+  pinEntry += digit;
+  updatePinDots();
+  if (pinEntry.length === 4) {
+    setTimeout(checkPin, 120);
+  }
+}
+function pinDel() {
+  pinEntry = pinEntry.slice(0, -1);
+  updatePinDots();
+  document.getElementById('pin-error').textContent = '';
+}
+function updatePinDots(state = '') {
+  for (let i = 0; i < 4; i++) {
+    const d = document.getElementById('pd' + i);
+    d.className = 'pin-dot' + (i < pinEntry.length ? ' filled' : '') + (state === 'error' ? ' error' : '');
+  }
+}
+function checkPin() {
+  if (pinEntry === getPin()) {
+    sessionStorage.setItem('barber_unlocked', '1');
+    document.getElementById('pin-screen').style.display = 'none';
+    pinLocked = false;
+    renderHome();
+  } else {
+    updatePinDots('error');
+    document.getElementById('pin-error').textContent = '❌ Code incorrect, réessaie';
+    pinEntry = '';
+    setTimeout(() => { updatePinDots(); }, 600);
+  }
+}
+
+function showChangePinModal() {
+  document.getElementById('change-pin-modal').style.display = 'flex';
+}
+function doChangePin() {
+  const old = document.getElementById('old-pin').value;
+  const newp = document.getElementById('new-pin').value;
+  const conf = document.getElementById('confirm-pin').value;
+  if (old !== getPin()) { showToast('❌ Ancien code incorrect', 'error'); return; }
+  if (newp.length !== 4 || !/^\d{4}$/.test(newp)) { showToast('❌ Le code doit faire 4 chiffres', 'error'); return; }
+  if (newp !== conf) { showToast('❌ Les codes ne correspondent pas', 'error'); return; }
+  savePin(newp);
+  document.getElementById('change-pin-modal').style.display = 'none';
+  document.getElementById('old-pin').value = '';
+  document.getElementById('new-pin').value = '';
+  document.getElementById('confirm-pin').value = '';
+  showToast('✅ Code PIN modifié !');
+}
+
 // ── INIT ──────────────────────────────────────────────────────────
-renderHome();
+if (!pinLocked) renderHome();
 </script>
 </body>
 </html>
