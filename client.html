@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Ma Carte Barber">
+<title>Ma Carte Fidélité — Barber</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  :root {
+    --black: #050505;
+    --dark: #0f0f0f;
+    --card: #141414;
+    --border: #222;
+    --red: #e8382a;
+    --gold: #d4a843;
+    --text: #f0f0f0;
+    --muted: #555;
+    --sub: #888;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { background: var(--black); color: var(--text); font-family: 'DM Sans', sans-serif; min-height: 100vh; }
+
+  .page { max-width: 430px; margin: 0 auto; padding: 20px 16px 40px; }
+
+  /* NOT FOUND */
+  .not-found { text-align: center; padding: 60px 20px; }
+  .not-found-icon { font-size: 52px; margin-bottom: 16px; }
+  .not-found-title { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 2px; margin-bottom: 8px; }
+  .not-found-sub { color: var(--sub); font-size: 14px; line-height: 1.6; }
+
+  /* CARD */
+  .loyalty-card { border-radius: 22px; padding: 24px; position: relative; overflow: hidden; margin-bottom: 16px; animation: cardIn 0.5s ease; }
+  .loyalty-card.normal { background: linear-gradient(140deg, #1a0a0a 0%, #0d0d14 40%, #0f0a1a 100%); border: 1px solid #2a1020; box-shadow: 0 24px 60px rgba(232,56,42,0.15); }
+  .loyalty-card.reward { background: linear-gradient(140deg, #1a1000 0%, #0f0d00 40%, #1a0d00 100%); border: 1px solid var(--gold); box-shadow: 0 24px 60px rgba(212,168,67,0.25); animation: cardIn 0.5s ease, glow 3s ease-in-out infinite; }
+
+  /* Card top */
+  .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+  .card-brand { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 4px; color: var(--text); line-height: 1; }
+  .card-brand-sub { font-size: 9px; color: #5a4060; letter-spacing: 3px; margin-top: 3px; text-transform: uppercase; }
+  .scissors-deco { font-size: 30px; opacity: 0.25; transform: rotate(-20deg); }
+
+  /* Name */
+  .card-name { font-family: 'Bebas Neue', sans-serif; font-size: 30px; letter-spacing: 3px; margin-bottom: 3px; line-height: 1; }
+  .card-since { font-size: 11px; color: var(--muted); margin-bottom: 18px; letter-spacing: 0.5px; }
+
+  /* Progress */
+  .card-prog-label { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 6px; }
+  .card-prog-label span:first-child { color: var(--sub); }
+  .card-prog-label span:last-child { color: var(--red); font-weight: 700; }
+  .card-prog-label span:last-child.gold { color: var(--gold); }
+  .prog-track { background: rgba(255,255,255,0.06); border-radius: 99px; height: 6px; margin-bottom: 20px; overflow: hidden; }
+  .prog-fill { height: 100%; border-radius: 99px; transition: width 0.8s cubic-bezier(.4,0,.2,1); }
+  .prog-fill.normal { background: linear-gradient(90deg, var(--red), #ff6b5b); }
+  .prog-fill.gold { background: linear-gradient(90deg, #b07d20, var(--gold), #f0c84a); }
+
+  /* Dots */
+  .dots { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-bottom: 20px; }
+  .dot { aspect-ratio: 1; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; transition: all 0.3s ease; }
+  .dot.empty { background: rgba(255,255,255,0.03); border: 1px solid var(--border); color: var(--muted); font-size: 11px; }
+  .dot.filled { background: linear-gradient(135deg, #c0281c, var(--red)); border: 1px solid var(--red); color: #fff; font-size: 15px; }
+  .dot.gold-filled { background: linear-gradient(135deg, #a06010, var(--gold)); border: 1px solid var(--gold); color: #000; font-size: 15px; }
+
+  /* Reward banner */
+  .reward-banner { background: linear-gradient(90deg, #8a5c00, var(--gold), #8a5c00); border-radius: 10px; padding: 11px 14px; text-align: center; font-family: 'Bebas Neue', sans-serif; font-size: 18px; letter-spacing: 2px; color: #000; margin-bottom: 18px; animation: pulse 2s ease infinite; }
+
+  /* QR Section */
+  .qr-section { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 20px; text-align: center; margin-bottom: 14px; }
+  .qr-title { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 14px; }
+  .qr-box { display: inline-block; background: #181818; padding: 10px; border-radius: 12px; border: 1px solid var(--border); }
+  .qr-id { font-family: 'Bebas Neue', sans-serif; font-size: 28px; letter-spacing: 6px; color: var(--red); margin-top: 12px; }
+  .qr-hint { font-size: 12px; color: var(--muted); margin-top: 6px; }
+
+  /* How it works */
+  .how-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 18px; }
+  .how-title { font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 14px; }
+  .step { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 12px; font-size: 13px; color: var(--sub); line-height: 1.5; }
+  .step:last-child { margin-bottom: 0; }
+  .step-num { background: var(--red); color: #fff; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; flex-shrink: 0; margin-top: 1px; }
+  .step strong { color: var(--text); }
+
+  /* Decorative noise */
+  .card-noise { position: absolute; inset: 0; background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E"); pointer-events: none; }
+  .card-shine { position: absolute; top: -60px; right: -60px; width: 180px; height: 180px; background: radial-gradient(circle, rgba(255,255,255,0.04) 0%, transparent 70%); pointer-events: none; }
+
+  @keyframes cardIn { from { opacity: 0; transform: translateY(20px) scale(0.97); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  @keyframes glow { 0%,100% { box-shadow: 0 24px 60px rgba(212,168,67,0.2); } 50% { box-shadow: 0 24px 80px rgba(212,168,67,0.4); } }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.85; } }
+</style>
+</head>
+<body>
+<div class="page" id="main"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+function getParam(name) {
+  return new URLSearchParams(window.location.search).get(name);
+}
+function loadClients() {
+  try { return JSON.parse(localStorage.getItem('barber_clients') || '[]'); } catch { return []; }
+}
+
+function render() {
+  const id = getParam('id');
+  const main = document.getElementById('main');
+
+  if (!id) {
+    main.innerHTML = `
+      <div class="not-found">
+        <div class="not-found-icon">✂️</div>
+        <div class="not-found-title">Carte introuvable</div>
+        <div class="not-found-sub">Ce lien ne contient pas d'identifiant client.<br>Demande à ton barber de te renvoyer le lien.</div>
+      </div>`;
+    return;
+  }
+
+  const clients = loadClients();
+  const c = clients.find(x => x.id === id);
+
+  if (!c) {
+    main.innerHTML = `
+      <div class="not-found">
+        <div class="not-found-icon">🔍</div>
+        <div class="not-found-title">Client introuvable</div>
+        <div class="not-found-sub">Le code <strong style="color:var(--red)">${id}</strong> n'existe pas encore.<br>Ouvre ce lien depuis le téléphone de ton barber, ou demande-lui de te recréer une carte.</div>
+      </div>`;
+    return;
+  }
+
+  const cuts = c.cuts;
+  const hasReward = cuts >= 10;
+  const pct = Math.min(100, (cuts / 10) * 100);
+
+  // Dots
+  const dotsHTML = Array.from({length: 10}, (_, i) => {
+    if (i < cuts) {
+      return `<div class="dot ${hasReward ? 'gold-filled' : 'filled'}">✂</div>`;
+    }
+    return `<div class="dot empty">${i + 1}</div>`;
+  }).join('');
+
+  main.innerHTML = `
+    <div class="loyalty-card ${hasReward ? 'reward' : 'normal'}">
+      <div class="card-noise"></div>
+      <div class="card-shine"></div>
+      <div class="card-top">
+        <div>
+          <div class="card-brand">✂ BARBER</div>
+          <div class="card-brand-sub">Carte de Fidélité</div>
+        </div>
+        <div class="scissors-deco">✂</div>
+      </div>
+      <div class="card-name">${c.name.toUpperCase()}</div>
+      <div class="card-since">Membre depuis ${c.joinDate}</div>
+      <div class="card-prog-label">
+        <span>${cuts} coupe${cuts > 1 ? 's' : ''} validée${cuts > 1 ? 's' : ''}</span>
+        <span class="${hasReward ? 'gold' : ''}">${hasReward ? '🎁 -50% disponible !' : (10 - cuts) + ' avant la réduction'}</span>
+      </div>
+      <div class="prog-track"><div class="prog-fill ${hasReward ? 'gold' : 'normal'}" style="width:${pct}%"></div></div>
+      <div class="dots">${dotsHTML}</div>
+      ${hasReward ? `<div class="reward-banner">🎉 PROCHAINE COUPE À -50% 🎉</div>` : ''}
+    </div>
+
+    <div class="qr-section">
+      <div class="qr-title">Montre ce QR code à ton barber</div>
+      <div class="qr-box" id="qr-code"></div>
+      <div class="qr-id">${c.id}</div>
+      <div class="qr-hint">Ton code personnel — à présenter à chaque visite</div>
+    </div>
+
+    <div class="how-card">
+      <div class="how-title">Comment ça marche</div>
+      <div class="step"><div class="step-num">1</div><span>Montre ce QR code à <strong>chaque visite</strong></span></div>
+      <div class="step"><div class="step-num">2</div><span>Ton barber scanne et <strong>valide ta coupe</strong></span></div>
+      <div class="step"><div class="step-num">3</div><span>À <strong>10 coupes</strong> → la prochaine à <strong>-50% !</strong></span></div>
+    </div>
+  `;
+
+  // Generate QR
+  setTimeout(() => {
+    new QRCode(document.getElementById('qr-code'), {
+      text: c.id,
+      width: 160,
+      height: 160,
+      colorDark: '#e8382a',
+      colorLight: '#181818'
+    });
+  }, 50);
+}
+
+render();
+
+// Refresh every 5s in case barber validates on same device
+setInterval(render, 5000);
+</script>
+</body>
+</html>
